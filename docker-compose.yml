@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: researchmate-db
+    environment:
+      POSTGRES_USER: researchmate
+      POSTGRES_PASSWORD: researchmate_secure_password
+      POSTGRES_DB: researchmate_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: researchmate-backend
+    environment:
+      APP_NAME: ResearchMate AI
+      PORT: 8000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://researchmate:researchmate_secure_password@db:5432/researchmate_db
+      SECRET_KEY: docker-production-super-secret-key-32chars-min
+      AI_PROVIDER: demo
+      DEMO_MODE: "True"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/uploads:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: researchmate-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
